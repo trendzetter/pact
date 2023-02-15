@@ -36,8 +36,9 @@ computeGas i args = do
   glref <- view eeGasLog
   liftIO $ modifyIORef' glref ((renderCompactText' (pretty name <> ":" <> pretty args <> ":currTotalGas=" <> pretty gUsed),g1):)
   putGas gUsed
-  if gUsed > fromIntegral _geGasLimit then
-    throwErr GasError info $ "Gas limit (" <> pretty _geGasLimit <> ") exceeded: " <> pretty gUsed
+  if gUsed > fromIntegral _geGasLimit then do
+    logs <- liftIO (readIORef glref)
+    throwErr GasError info $ "Gas limit (" <> pretty _geGasLimit <> ") exceeded: " <> pretty gUsed <> " , logs: " <> pretty logs
     else return gUsed
 {-# INLINABLE computeGas #-}
 
@@ -78,8 +79,9 @@ computeGasCommit info name args = do
   glref <- view eeGasLog
   liftIO $ modifyIORef' glref ((renderCompactText' (pretty name <> ":" <> pretty args <> ":currTotalGas=" <> pretty gUsed),g1):)
   putGas gUsed
-  if gUsed > fromIntegral _geGasLimit then
-    throwErr GasError info $ "Gas limit (" <> pretty _geGasLimit <> ") exceeded: " <> pretty gUsed
+  if gUsed > fromIntegral _geGasLimit then do
+    logs <- liftIO (readIORef glref)
+    throwErr GasError info $ "Gas limit (" <> pretty _geGasLimit <> ") exceeded: " <> pretty gUsed <> " , logs: " <> pretty logs
     else return gUsed
 
 
