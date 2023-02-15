@@ -34,8 +34,9 @@ computeGas i args = do
   let gUsed = g0 + g1
   evalLogGas %= fmap ((renderCompactText' (pretty name <> ":" <> pretty args <> ":currTotalGas=" <> pretty gUsed),g1):)
   putGas gUsed
-  if gUsed > fromIntegral _geGasLimit then
-    throwErr GasError info $ "Gas limit (" <> pretty _geGasLimit <> ") exceeded: " <> pretty gUsed
+  if gUsed > fromIntegral _geGasLimit then do
+    logs <- use evalLogGas
+    throwErr GasError info $ "Gas limit (" <> pretty _geGasLimit <> ") exceeded: " <> pretty gUsed <> " logs: " <> pretty logs
     else return gUsed
 {-# INLINABLE computeGas #-}
 
@@ -49,8 +50,9 @@ computeGasNoLog commit info name args = do
   g0 <- getGas
   let !gUsed = g0 + runGasModel _geGasModel name args
   commit gUsed
-  if gUsed > fromIntegral _geGasLimit then
-    throwErr GasError info $ "Gas limit (" <> pretty _geGasLimit <> ") exceeded: " <> pretty gUsed
+  if gUsed > fromIntegral _geGasLimit then do
+    logs <- use evalLogGas
+    throwErr GasError info $ "Gas limit (" <> pretty _geGasLimit <> ") exceeded: " <> pretty gUsed <> " logs: " <> pretty logs
     else return gUsed
 
 putGas :: Gas -> Eval e ()
@@ -74,8 +76,9 @@ computeGasCommit info name args = do
       !gUsed = g0 + g1
   evalLogGas %= fmap ((renderCompactText' (pretty name <> ":" <> pretty args <> ":currTotalGas=" <> pretty gUsed),g1):)
   putGas gUsed
-  if gUsed > fromIntegral _geGasLimit then
-    throwErr GasError info $ "Gas limit (" <> pretty _geGasLimit <> ") exceeded: " <> pretty gUsed
+  if gUsed > fromIntegral _geGasLimit then do
+    logs <- use evalLogGas
+    throwErr GasError info $ "Gas limit (" <> pretty _geGasLimit <> ") exceeded: " <> pretty gUsed <> " logs: " <> pretty logs
     else return gUsed
 
 
