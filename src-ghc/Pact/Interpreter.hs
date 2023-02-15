@@ -174,6 +174,7 @@ setupEvalEnv
 setupEvalEnv dbEnv ent mode msgData refStore gasEnv np spv pd ec = do
   gasRef <- newIORef 0
   warnRef <- newIORef mempty
+  gLogRef <- newIORef []
   pure EvalEnv {
     _eeRefStore = refStore
   , _eeMsgSigs = mkMsgSigs $ mdSigners msgData
@@ -194,6 +195,7 @@ setupEvalEnv dbEnv ent mode msgData refStore gasEnv np spv pd ec = do
   , _eeAdvice = def
   , _eeInRepl = False
   , _eeWarnings = warnRef
+  , _eeGasLog = gLogRef
   }
   where
     mkMsgSigs ss = M.fromList $ map toPair ss
@@ -232,14 +234,14 @@ interpret runner evalEnv terms = do
     runEval def evalEnv $ evalTerms runner terms
   gas <- readIORef (_eeGas evalEnv)
   warnings <- readIORef (_eeWarnings evalEnv)
-  let gasLogs = _evalLogGas state
-      pactExec = _evalPactExec state
+  gasLogs <- readIORef (_eeGasLog evalEnv)
+  let pactExec = _evalPactExec state
       modules = _rsLoadedModules $ _evalRefs state
   -- output uses lenient conversion
   return $! EvalResult
     terms
     (map (elideModRefInfo . toPactValueLenient) rs)
-    logs pactExec gas modules txid gasLogs (_evalEvents state) warnings
+    logs pactExec gas modules txid (Just gasLogs) (_evalEvents state) warnings
 
 evalTerms :: Interpreter e -> EvalInput -> Eval e EvalOutput
 evalTerms interp input = withRollback (start (interpreter interp runInput) >>= end)
