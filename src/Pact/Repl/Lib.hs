@@ -719,8 +719,9 @@ envGas i as = argsError i as
 
 gasLog :: RNativeFun LibState
 gasLog _ _ = do
-  gl <- use evalLogGas
-  evalLogGas .= Just []
+  glref <- view eeGasLog
+  gl <- Just <$> liftIO (readIORef glref)
+  liftIO $ writeIORef glref []
   case gl of
     Nothing -> return $ tStr $ "Enabled gas log"
     Just logs -> let total = sum (map snd logs) in

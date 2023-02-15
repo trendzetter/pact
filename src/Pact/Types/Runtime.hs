@@ -30,12 +30,12 @@ module Pact.Types.Runtime
    RefStore(..),rsNatives,
    EvalEnv(..),eeRefStore,eeMsgSigs,eeMsgBody,eeMode,eeEntity,eePactStep,eePactDbVar,eeInRepl,
    eePactDb,eePurity,eeHash,eeGas, eeGasEnv,eeNamespacePolicy,eeSPVSupport,eePublicData,eeExecutionConfig,
-   eeAdvice, eeWarnings,
+   eeAdvice, eeWarnings, eeGasLog,
    toPactId,
    Purity(..),
    RefState(..),rsLoaded,rsLoadedModules,rsNamespace,rsQualifiedDeps,
    EvalState(..),evalRefs,evalCallStack,evalPactExec,
-   evalCapabilities,evalLogGas,evalEvents,
+   evalCapabilities,evalEvents,
    Eval(..),runEval,runEval',catchesPactError,
    call,method,
    readRow,writeRow,keys,txids,createUserTable,getUserTableInfo,beginTx,commitTx,rollbackTx,getTxLog,
@@ -253,6 +253,7 @@ data EvalEnv e = EvalEnv {
     , _eeInRepl :: Bool
       -- | Warnings ref
     , _eeWarnings :: IORef (Set PactWarning)
+    , _eeGasLog :: IORef [(Text,Gas)]
     }
 makeLenses ''EvalEnv
 
@@ -299,13 +300,13 @@ data EvalState = EvalState {
       -- | Capability list
     , _evalCapabilities :: Capabilities
       -- | Tracks gas logs if enabled (i.e. Just)
-    , _evalLogGas :: Maybe [(Text,Gas)]
+    -- , _evalLogGas :: Maybe [(Text,Gas)]
       -- | Accumulate events
     , _evalEvents :: ![PactEvent]
     } deriving (Show, Generic)
 makeLenses ''EvalState
 instance NFData EvalState
-instance Default EvalState where def = EvalState def def def def def def
+instance Default EvalState where def = EvalState def def def def def
 
 -- | Interpreter monad, parameterized over back-end MVar state type.
 newtype Eval e a =
