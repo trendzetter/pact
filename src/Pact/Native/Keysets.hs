@@ -69,8 +69,13 @@ readKeySet' :: FunApp -> Text -> Eval e KeySet
 readKeySet' i key = do
   ks <- parseMsgKey i "read-keyset" key
   whenExecutionFlagSet FlagEnforceKeyFormats $
-      enforceKeyFormats (const $ evalError' i "Invalid keyset") ks
+      enforceKeyFormats legacyKeySetError ks
   pure ks
+ where
+  legacyKeySetError
+    -- "info": "<interactive>:0:162"
+    | ks == && i
+    | otherwise = const $ evalError' i "Invalid keyset"
 
 defineKeyset :: GasRNativeFun e
 defineKeyset g0 fi as = case as of
