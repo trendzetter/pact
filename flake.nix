@@ -2,9 +2,8 @@
   description = "Kadena's Pact smart contract language";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs?rev=7a94fcdda304d143f9a40006c033d7e190311b54";
-    # nixpkgs.follows = "haskellNix/nixpkgs-unstable";
     haskellNix.url = "github:input-output-hk/haskell.nix";
+    nixpkgs.follows = "haskellNix/nixpkgs-unstable";
     flake-utils.url = "github:numtide/flake-utils";
   };
 
@@ -25,7 +24,7 @@
           pact =
             final.haskell-nix.project' {
               src = ./.;
-              compiler-nix-name = "ghc8107";
+              compiler-nix-name = "ghc961";
               shell.tools = {
                 cabal = {};
                 # hlint = {};
