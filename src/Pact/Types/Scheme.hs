@@ -28,38 +28,38 @@ import qualified Pact.JSON.Encode as J
 
 --------- PPKSCHEME DATA TYPE ---------
 
-data PPKScheme = ED25519 | ETH
+data PPKScheme = ED25519 | WebAuthn
   deriving (Show, Eq, Ord, Generic)
-
 
 instance NFData PPKScheme
 instance Serialize PPKScheme
 
 instance ToJSON PPKScheme where
   toJSON ED25519 = "ED25519"
-  toJSON ETH = "ETH"
+  toJSON WebAuthn = "WebAuthn"
 
   toEncoding ED25519 = toEncoding @T.Text "ED25519"
-  toEncoding ETH = toEncoding @T.Text "ETH"
+  toEncoding WebAuthn = toEncoding @T.Text "WebAuthn"
   {-# INLINE toJSON #-}
   {-# INLINE toEncoding #-}
 
 instance FromJSON PPKScheme where
   parseJSON = withText "PPKScheme" parseText
   {-# INLINE parseJSON #-}
+
 instance ParseText PPKScheme where
   parseText s = case s of
     "ED25519" -> return ED25519
-    "ETH" -> return ETH
+    "WebAuthn" -> return WebAuthn
     _ -> fail $ "Unsupported PPKScheme: " ++ show s
   {-# INLINE parseText #-}
 
 instance Arbitrary PPKScheme where
-  arbitrary = elements [ED25519, ETH]
+  arbitrary = elements [ED25519 , WebAuthn]
 
 instance J.Encode PPKScheme where
   build ED25519 = J.text "ED25519"
-  build ETH = J.text "ETH"
+  build WebAuthn = J.text "WebAuthn"
   {-# INLINE build #-}
 
 
@@ -71,7 +71,7 @@ defPPKScheme = ED25519
 
 data SPPKScheme :: PPKScheme -> Type where
   SED25519 :: SPPKScheme 'ED25519
-  SETH :: SPPKScheme 'ETH
+  SWebAuthn :: SPPKScheme 'WebAuthn
 instance Show (SPPKScheme a) where
   show SED25519 = show ED25519
-  show SETH = show ETH
+  show SWebAuthn = show WebAuthn

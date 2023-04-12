@@ -27,7 +27,6 @@ import System.Timeout
 import qualified Data.Vector as V
 
 import Test.Hspec
-import Test.Hspec.Core.Spec
 
 import Pact.ApiReq
 import Pact.Server.API
@@ -137,7 +136,7 @@ _runArgs args = withArgs (words args) $ hspec spec
 testOldNestedPacts :: Spec
 testOldNestedPacts = do
   it "throws error when multiple defpact executions occur in same transaction" $ do
-    adminKeys <- genKeys
+    adminKeys <- genKeyPair
     let makeExecCmdWith = makeExecCmd adminKeys
 
     moduleCmd <- makeExecCmdWith (threeStepPactCode "nestedPact")
@@ -207,7 +206,7 @@ testNestedPactContinuation = do
 
 testSimpleServerCmd :: IO (Maybe (CommandResult Hash))
 testSimpleServerCmd = do
-  simpleKeys <- genKeys
+  simpleKeys <- genKeyPair
   cmd <- mkExec  "(+ 1 2)" Null def [(simpleKeys,[])] Nothing (Just "test1")
   allResults <- runAll [cmd]
   return $ HM.lookup (cmdToRequestKey cmd) allResults
@@ -215,7 +214,7 @@ testSimpleServerCmd = do
 
 testCorrectNextStep :: Text -> Text -> [ExecutionFlag] -> Expectation
 testCorrectNextStep code command flags = do
-  adminKeys <- genKeys
+  adminKeys <- genKeyPair
   let makeExecCmdWith = makeExecCmd adminKeys
   moduleCmd       <- makeExecCmdWith code
   executePactCmd  <- makeExecCmdWith command
@@ -304,7 +303,7 @@ threeStepNestedPactCode moduleName =
 
 testIncorrectNextStep :: Text -> Text -> [ExecutionFlag] -> Expectation
 testIncorrectNextStep code command flags = do
-  adminKeys <- genKeys
+  adminKeys <- genKeyPair
 
   let makeExecCmdWith = makeExecCmd adminKeys
   moduleCmd         <- makeExecCmdWith code
@@ -324,7 +323,7 @@ testIncorrectNextStep code command flags = do
 
 testLastStep :: Text -> Text -> [ExecutionFlag] -> Expectation
 testLastStep code command flags = do
-  adminKeys <- genKeys
+  adminKeys <- genKeyPair
 
   let makeExecCmdWith = makeExecCmd adminKeys
   moduleCmd        <- makeExecCmdWith code
@@ -349,7 +348,7 @@ testLastStep code command flags = do
 
 testErrStep :: Text -> Text -> [ExecutionFlag] -> Expectation
 testErrStep code command flags = do
-  adminKeys <- genKeys
+  adminKeys <- genKeyPair
 
   let makeExecCmdWith = makeExecCmd adminKeys
   moduleCmd        <- makeExecCmdWith code
@@ -434,7 +433,7 @@ testPactRollback = do
 testCorrectRollbackStep :: Expectation
 testCorrectRollbackStep = do
   let moduleName = "testCorrectRollbackStep"
-  adminKeys <- genKeys
+  adminKeys <- genKeyPair
 
   let makeExecCmdWith = makeExecCmd adminKeys
   moduleCmd       <- makeExecCmdWith (pactWithRollbackCode moduleName)
@@ -473,7 +472,7 @@ pactWithRollbackCode moduleName =
 testIncorrectRollbackStep :: Expectation
 testIncorrectRollbackStep = do
   let moduleName = "testIncorrectRollbackStep"
-  adminKeys <- genKeys
+  adminKeys <- genKeyPair
 
   let makeExecCmdWith = makeExecCmd adminKeys
   moduleCmd       <- makeExecCmdWith (pactWithRollbackCode moduleName)
@@ -498,7 +497,7 @@ testIncorrectRollbackStep = do
 testRollbackErr :: Expectation
 testRollbackErr = do
   let moduleName = "testRollbackErr"
-  adminKeys <- genKeys
+  adminKeys <- genKeyPair
 
   let makeExecCmdWith = makeExecCmd adminKeys
   moduleCmd        <- makeExecCmdWith (pactWithRollbackErrCode moduleName)
@@ -535,7 +534,7 @@ pactWithRollbackErrCode moduleName =
 testNoRollbackFunc :: Expectation
 testNoRollbackFunc = do
   let moduleName = "testNoRollbackFunc"
-  adminKeys <- genKeys
+  adminKeys <- genKeyPair
 
   let makeExecCmdWith = makeExecCmd adminKeys
   moduleCmd        <- makeExecCmdWith (threeStepPactCode moduleName)
@@ -615,7 +614,7 @@ testNestedPactYield = do
     -- a fresh server to prove that a new pact coming through
     -- SPV can start from step 1.
     step0 = do
-      adminKeys <- genKeys
+      adminKeys <- genKeyPair
 
       let makeExecCmdWith = makeExecCmd' (Just "xchain") adminKeys
       moduleCmd        <- makeExecCmdWith nestedPactCrossChainYield
@@ -692,7 +691,7 @@ testNestedPactYield = do
 
 testValidYield :: Text -> (Text -> Text) -> [ExecutionFlag] -> Expectation
 testValidYield moduleName mkCode flags = do
-  adminKeys <- genKeys
+  adminKeys <- genKeyPair
 
   let makeExecCmdWith = makeExecCmd adminKeys
   moduleCmd          <- makeExecCmdWith (mkCode moduleName)
@@ -776,7 +775,7 @@ nestedPactWithYield moduleName =
 testNoYield :: Text -> (Text -> Text) -> [ExecutionFlag] -> Expectation
 testNoYield moduleName mkCode flags = do
   -- let moduleName = "testNoYield"
-  adminKeys <- genKeys
+  adminKeys <- genKeyPair
 
   let makeExecCmdWith = makeExecCmd adminKeys
   moduleCmd      <- makeExecCmdWith (mkCode moduleName)
@@ -847,7 +846,7 @@ nestedPactWithYieldErr moduleName =
 testResetYield :: Text -> (Text -> Text) -> [ExecutionFlag] -> Expectation
 testResetYield moduleName mkCode flags = do
   -- let moduleName = "testResetYield"
-  adminKeys <- genKeys
+  adminKeys <- genKeyPair
 
   let makeExecCmdWith = makeExecCmd adminKeys
   moduleCmd        <- makeExecCmdWith (mkCode moduleName)
@@ -934,7 +933,7 @@ testCrossChainYield blessCode succeeds backCompat = step0
     -- a fresh server to prove that a new pact coming through
     -- SPV can start from step 1.
     step0 = do
-      adminKeys <- genKeys
+      adminKeys <- genKeyPair
 
       let makeExecCmdWith = makeExecCmd' (Just "xchain") adminKeys
       moduleCmd        <- makeExecCmdWith (pactCrossChainYield "")
@@ -1290,38 +1289,38 @@ failsWith cmd r = shouldMatch cmd (resultShouldBe $ Left r)
 runResults :: r -> ReaderT r m a -> m a
 runResults rs act = runReaderT act rs
 
-makeExecCmd :: SomeKeyPair -> Text -> IO (Command Text)
+makeExecCmd :: Ed25519KeyPair -> Text -> IO (Command Text)
 makeExecCmd keyPairs code = makeExecCmd' Nothing keyPairs code
 
-makeExecCmd' :: Maybe Text -> SomeKeyPair -> Text -> IO (Command Text)
+makeExecCmd' :: Maybe Text -> Ed25519KeyPair -> Text -> IO (Command Text)
 makeExecCmd' nonce keyPairs code = mkExec code
   (object ["admin-keyset" .= [formatPubKeyForCmd keyPairs]]) def [(keyPairs,[])] Nothing nonce
 
 
-formatPubKeyForCmd :: SomeKeyPair -> Value
-formatPubKeyForCmd kp = toB16JSON $ formatPublicKey kp
+formatPubKeyForCmd :: Ed25519KeyPair -> Value
+formatPubKeyForCmd kp = toB16JSON $ getPublic kp
 
 
 
 makeContCmd
-  :: SomeKeyPair  -- signing pair
-  -> Bool         -- isRollback
-  -> Value        -- data
-  -> Command Text -- cmd to get pact Id from
-  -> Int          -- step
-  -> Text         -- nonce
+  :: Ed25519KeyPair -- signing pair
+  -> Bool           -- isRollback
+  -> Value          -- data
+  -> Command Text   -- cmd to get pact Id from
+  -> Int            -- step
+  -> Text           -- nonce
   -> IO (Command Text)
 makeContCmd = makeContCmd' Nothing
 
 
 makeContCmd'
   :: Maybe ContProof
-  -> SomeKeyPair  -- signing pair
-  -> Bool         -- isRollback
-  -> Value        -- data
-  -> Command Text -- cmd to get pact Id from
-  -> Int          -- step
-  -> Text         -- nonce
+  -> Ed25519KeyPair -- signing pair
+  -> Bool           -- isRollback
+  -> Value          -- data
+  -> Command Text   -- cmd to get pact Id from
+  -> Int            -- step
+  -> Text           -- nonce
   -> IO (Command Text)
 makeContCmd' contProofM keyPairs isRollback cmdData pactExecCmd step nonce =
   mkCont (getPactId pactExecCmd) step isRollback cmdData def [(keyPairs,[])] (Just nonce) contProofM Nothing
