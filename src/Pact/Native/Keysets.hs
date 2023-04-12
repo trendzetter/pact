@@ -74,7 +74,7 @@ readKeySet' i key = do
  where
   legacyKeySetError
     -- "info": "<interactive>:0:162"
-    | ks == && i
+    -- | ks == && i -- TEMPORARY
     | otherwise = const $ evalError' i "Invalid keyset"
 
 defineKeyset :: GasRNativeFun e

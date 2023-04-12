@@ -1,13 +1,14 @@
 packages: .
 
 -- these upper bounds are required in order to not break payload validation in chainweb
-constraints: base16-bytestring <1
+constraints: base16-bytestring <1.1
 constraints: prettyprinter <1.6.1
-constraints: base64-bytestring <1.1
+constraints: base64-bytestring <1.3
 
-allow-newer: base64-bytestring:*
-allow-newer: base16-bytestring:*
+allow-newer: cborg:*
 allow-newer: prettyprinter:*
+allow-newer: serialise:*
+allow-newer: webauthn:*
 
 -- test upper bounds
 constraints: hspec-golden <0.2,
