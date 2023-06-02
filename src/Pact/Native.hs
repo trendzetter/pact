@@ -68,13 +68,14 @@ import Data.Bool (bool)
 import qualified Data.ByteString as BS
 import Data.ByteString.Lazy (toStrict)
 import qualified Data.Char as Char
+import Data.Containers.ListUtils (nubOrd)
 import Data.Bits
 import Data.Default
 import Data.Functor(($>))
 import Data.Foldable
+-- import qualified Data.List as L
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Map.Strict as M
-import qualified Data.List as L (nubBy)
 import qualified Data.Set as S
 import Data.Text (Text, pack, unpack)
 import qualified Data.Text as T
@@ -1170,12 +1171,72 @@ distinct g i = \case
     [l@(TList v _ _ )] | V.null v -> pure (g,l)
     [TList{..}] -> _tList
         & V.toList
-        & L.nubBy termEq
+        & map NubOrdering
+        & nubOrd
+        & map unNubOrdering
         & V.fromList
         & toTListV _tListType def
         & pure
         & computeGas' g i (GDistinct $ V.length _tList)
     as -> argsError i as
+
+data NubOrdering = NubOrdering { unNubOrdering :: Term Name }
+
+instance Eq NubOrdering where
+  x == y = unNubOrdering x == unNubOrdering y
+
+-- This instance assumes that both operands are the type of `Term` that
+-- could appear in Value position, e.g. a literal value, a list of values,
+-- an object, etc.
+-- It is assumed that no term is `TModule`.
+instance Ord NubOrdering where
+  NubOrdering x `compare` NubOrdering y = case (x,y) of
+
+    (TLiteral {_tLiteral = xLiteral },
+     TLiteral {_tLiteral = yLiteral}) -> xLiteral `compare` yLiteral
+    (TLiteral {} , _) -> LT
+
+    (TList {_tList = xList}, TList {_tList = yList}) -> go xList yList
+     where
+       go xVec yVec = case (V.uncons xVec, V.uncons yVec) of
+          (Nothing, Nothing) -> EQ
+          (Just _, Nothing) -> GT
+          (Nothing, Just _) -> LT
+          (Just (xHead,xs), Just(yHead,ys)) -> case NubOrdering xHead `compare` NubOrdering yHead of
+            EQ -> go xs ys
+            otherCmp -> otherCmp
+    (TList {}, _) -> LT
+
+    (TObject { _tObject = Object { _oObject = ObjectMap xObject } },
+     TObject {_tObject = Object { _oObject = ObjectMap yObject }}) ->
+      if compareKeys (L.sort $ M.keys xObject) (L.sort $ M.keys yObject) == EQ
+      then compareValues
+      else EQ
+      where
+        compareKeys xKeys [] = GT
+        compareKeys [] yKeys = LT
+        compareKeys (x:xs) (y:ys) = if x == y then compareKeys xs ys else x `compare` y
+        compareValues = undefined
+    (TObject {}, _) -> LT
+
+    (TModule {}, _) -> impossible "Module"
+    (TDef {}, _) -> impossible "Def"
+    (TNative {}, _) -> impossible "Native"
+    (TConst {}, _) -> impossible "Const"
+    (TApp {}, _) -> impossible "App"
+    (TVar {}, _) -> impossible "Var"
+    (TBinding {}, _) -> impossible "Binding"
+    (TLam {}, _) -> impossible "Lam"
+    (TSchema {}, _) -> impossible "Schema"
+    (TGuard {}, _) -> impossible "Guard"
+    (TUse {}, _) -> impossible "Use"
+    (TStep {}, _) -> impossible "Step"
+    (TModRef {}, _) -> impossible "ModRef"
+    (TTable {}, _) -> impossible "Table"
+    (TDynamic {}, _) -> impossible "Dynamic"
+
+    where
+      impossible ty = error $ "impossible case: " ++ ty ++ "is never fonud in value position"
 
 
 sort' :: GasRNativeFun e
