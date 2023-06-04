@@ -89,7 +89,7 @@ If you want to install from source, see [building from source](#building-from-so
 
 ### Instructions for Linux Users
 
-Linux is supported in terms of both the binary distributions (see below) and building from source. For installing `pact` on Linux distributions in the Arch family, refer to [this package on the AUR](https://aur.archlinux.org/packages/pact/). Otherwise, please refer to [building from source](#building-from-source).
+Linux is supported both in terms of ready-to-use binary downloads (see [Binary Distributions](#binary-distributions)) and building from source. For installing `pact` on Linux distributions in the Arch family, refer to [this package on the AUR](https://aur.archlinux.org/packages/pact/). Otherwise, please refer to [building from source](#building-from-source).
 
 ### Building from Source
 
